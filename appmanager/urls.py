@@ -31,7 +31,9 @@ urlpatterns =[
     path('section_names',views.section_names,name='section_names'),
     path('add_section',views.add_section,name='add_section'),
     #-------------------------------------------------------
-   
+    # GET OFFERS , ADD, EDIT AND DELETE OFFER
+    path('add_offer',views.add_offer,name='add_offer'),
+    
    
     
     

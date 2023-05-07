@@ -7,6 +7,7 @@ from account.models import PatientProfile
 import json
 import calendar
 from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
 #-----------------------------------------------------------
 ################## HELP FUNCTIONS ##########################
 #-----------------------------------------------------------
@@ -70,16 +71,17 @@ def desc_lines(description):
      return description.split('\n')
 #----------------------------------------------------------     
 def get_offers():
-    today = datetime.now()
+    today = timezone.now()
     all_offers = Offer.objects.all()
     offers = []
     for offer in all_offers:
-         print(offer.ending_date)
-         if offer.ending_date <= today:
+     #     print(offer.ending_date)
+     #     print(today)
+     #     if offer.ending_date <= today:
                element = {
                     'name':offer.name ,
-                    'description':desc_lines(offer.description),
-                    'image':offer.photo.url if offer.photo else '-',
+                    'description':offer.description,
+                    'image':offer.photo.url if offer.photo  is not None else '-',
                     'start_date':offer.publish_date.strftime('%Y-%m-%d %H:%M') if offer.publish_date is not None else  '-',
                     
                     'end_date':offer.ending_date.strftime('%Y-%m-%d %H:%M') if offer.ending_date is not None else  '-',
@@ -88,8 +90,8 @@ def get_offers():
                     'discount': dicount(offer.old_price,offer.new_price) if offer.old_price is not None and offer.new_price is not None else '-',
                     'pd': str(offer.publish_date)
                }
-         print('1')
-         offers.append(element)
+        
+               offers.append(element)
     offers.sort(key=date_sorting,reverse=True)  
     return offers 
 #----------------------------------------------------------

@@ -281,7 +281,7 @@ def add_offer(request):
                    'result':result,
                    'message':'you don\'t have permission to do this action'
               })
-        name = request.data["name"]
+        name = request.data["offerName"]
         image = request.data["offerImage"]
         description = request.data["description"]
         start_date = request.data["startDate"]
