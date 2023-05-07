@@ -282,7 +282,7 @@ def add_offer(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["offerName"]
-        image = request.POST.get("offerImage",0)
+        image = request.POST.get("offerImage",None)
         description = request.POST.get("description",0)
         start_date = request.POST.get("startDate")
         end_date = request.POST.get("endDate",None)
@@ -291,7 +291,7 @@ def add_offer(request):
         if not Offer.objects.filter(name=name).exists():
              offer = Offer()
              offer.name = name
-             if image !=0 :
+             if image is not None :
                   offer.photo = image
              if description !=0 :          
                offer.description = description
