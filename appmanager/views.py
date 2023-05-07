@@ -282,21 +282,25 @@ def add_offer(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["offerName"]
-        image = request.data["offerImage"]
-        description = request.data["description"]
-        start_date = request.data["startDate"]
-        end_date = request.data["endDate"]
-        old_price  =request.data["oldPrice"]
-        new_price = request.data["newPrice"]
+        image = request.POST.get("offerImage",0)
+        description = request.POST.get("description",0)
+        start_date = request.POST.get("startDate")
+        end_date = request.POST.get("endDate",None)
+        old_price  =request.POST.get("oldPrice",None)
+        new_price = request.POST.get("newPrice",None)
         if not Offer.objects.filter(name=name).exists():
              offer = Offer()
              offer.name = name
-             offer.photo = image
-             offer.description = description
+             if image !=0 :
+                  offer.photo = image
+             if description !=0 :          
+               offer.description = description
              offer.publish_date = start_date
-             offer.ending_date = start_date if end_date == '0' else end_date
-             offer.old_price = old_price
-             offer.new_price = new_price
+             offer.ending_date = start_date if end_date is None else end_date
+             if old_price  is not None :
+                offer.old_price = old_price
+             if new_price is not None:   
+               offer.new_price = new_price
              offer.save()
              result = 'ok'
              return JsonResponse({
