@@ -26,7 +26,7 @@ class Offer(models.Model):
     ending_date = models.DateTimeField(blank=True,null=True)
     old_price = models.IntegerField(blank=True,null=True)
     new_price = models.IntegerField(blank=True,null=True)
-    discount = models.DecimalField(blank=True,null=True,max_digits=2,decimal_places=2)
+    discount = models.IntegerField(blank=True,null=True)
 
 
     

@@ -112,12 +112,12 @@ WSGI_APPLICATION = "WadiMedicalCenter.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 #     #    {
 #     #  "default": dj_database_url.parse(
 #     #     os.environ.get("DATABASE_URL")
@@ -126,11 +126,11 @@ WSGI_APPLICATION = "WadiMedicalCenter.wsgi.application"
 
 # To use Neon with Django, you have to create a Project on Neon and specify the project connection settings in your settings.py in the same way as for standalone Postgres.
 
-DATABASES = {
-  'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
+# DATABASES = {
+#   'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
    
    
- }
+#  }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
