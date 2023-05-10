@@ -80,7 +80,7 @@ def get_offers():
      #     if offer.ending_date <= today:
                element = {
                     'name':offer.name ,
-                    'description':offer.description,
+                    'description':desc_lines(offer.description),
                     'image':offer.photo.url if offer.photo  is not None else '-',
                     'start_date':offer.publish_date.strftime('%Y-%m-%d %H:%M') if offer.publish_date is not None else  '-',
                     
