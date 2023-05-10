@@ -85,9 +85,9 @@ def get_offers():
                     'start_date':offer.publish_date.strftime('%Y-%m-%d %H:%M') if offer.publish_date is not None else  '-',
                     
                     'end_date':offer.ending_date.strftime('%Y-%m-%d %H:%M') if offer.ending_date is not None else  '-',
-                    'old_price':offer.old_price if offer.old_price is not None else '-',
-                    'new_price':offer.new_price if offer.new_price is not None else '-',
-                    'discount': dicount(offer.old_price,offer.new_price) if offer.old_price is not None and offer.new_price is not None else '-',
+                    'old_price':str(offer.old_price) if offer.old_price is not None else '-',
+                    'new_price':str(offer.new_price) if offer.new_price is not None else '-',
+                    'discount': str(offer.discount) if offer.discount is not None else '-',
                     'pd': str(offer.publish_date)
                }
         
