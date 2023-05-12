@@ -23,7 +23,7 @@ def get_doctors_list():
             'Specialization' : doc.specialization,
         }
         doctors_list.append(doctor_details)
-    doctors_list.sort(key=sorting) 
+    doctors_list.sort(key=sorting)
     return doctors_list
 #-------------------------------------------------
 def get_therapists_list():
@@ -36,8 +36,8 @@ def get_therapists_list():
             'Specialization' : ther.specialization,
         }
         therapists_list.append(therapist_details)
-    therapists_list.sort(key=sorting) 
-    return therapists_list   
+    therapists_list.sort(key=sorting)
+    return therapists_list
 ########## ADD  TO THE CENTER ##################
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
@@ -75,9 +75,9 @@ def add_post(request):
              return JsonResponse({
                   'result':result,
                   "message" : "post already added",
-             })     
-      
-        
+             })
+
+
      except:
           return JsonResponse({
                'result':result,
@@ -117,9 +117,9 @@ def add_ins(request):
              return JsonResponse({
                   'result':result,
                   "message" : "post already added",
-             })     
-      
-        
+             })
+
+
      except:
           return JsonResponse({
                'result':result,
@@ -145,16 +145,18 @@ def add_therapist(request):
         description = request.data["description"]
         section_name = request.data["sectionName"]
         print('1')
-        saturday = request.data["saturday"] 
-        sunday = request.data["sunday"]  
-        monday =  request.data["monday"]  
-        tuesday = request.data["tuesday"]  
-        wednesday =  request.data["wednesday"]  
-        thursday = request.data["thursday"]  
-        friday =  request.data["friday"] 
+        saturday = request.data["saturday"]
+        sunday = request.data["sunday"]
+        monday =  request.data["monday"]
+        tuesday = request.data["tuesday"]
+        wednesday =  request.data["wednesday"]
+        thursday = request.data["thursday"]
+        friday =  request.data["friday"]
         print('2')
-        start_hours_in = request.data["startHoursIn"]  
+        start_hours_in = request.data["startHoursIn"]
         end_hours_in = request.data["endHoursIn"]
+        start_in = start_hours_in + ':00'
+        end_in = end_hours_in+':00'
         if not Therapist.objects.filter(name=name).exists():
              section = Section.objects.get(name=section_name)
              therapist  = Therapist()
@@ -172,8 +174,8 @@ def add_therapist(request):
              therapist.thursday = True if thursday=='1' else False
              therapist.friday = True if friday=='1' else False
              #end days
-             therapist.start_hours_in = start_hours_in
-             therapist.end_hours_in = end_hours_in
+             therapist.start_hours_in = start_in
+             therapist.end_hours_in = end_in
              therapist.save()
              result = 'ok'
              return JsonResponse({
@@ -184,7 +186,7 @@ def add_therapist(request):
              return JsonResponse({
                   'result':result,
                   'message':' therapist '+ name +' already exists'
-             })  
+             })
      except:
           return JsonResponse({
                'result':result,
@@ -206,7 +208,7 @@ def add_section(request):
               })
         name = request.data["name"]
         image = request.data["sectionImage"]
-        if not Section.objects.filter(name=name).exists():  
+        if not Section.objects.filter(name=name).exists():
              section = Section()
              section.name = name
              section.photo = image
@@ -220,12 +222,12 @@ def add_section(request):
              return JsonResponse({
                   'result':result,
                   'message':' therapist '+ name +' already exists'
-             })  
+             })
      except:
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
-          })        
+          })
 #----------------------------------------------------------
 ################ API FOR ADD DEVICE ######################
 #----------------------------------------------------------
@@ -261,7 +263,7 @@ def add_device(request):
              return JsonResponse({
                   'result':result,
                   'message':' device '+ name +' already exists'
-             })  
+             })
      except:
           return JsonResponse({
                'result':result,
@@ -282,25 +284,27 @@ def add_offer(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["offerName"]
-        image = request.POST.get("offerImage",None)
+        image = request.data["offerImage"]
         description = request.POST.get("description",0)
         start_date = request.POST.get("startDate")
         end_date = request.POST.get("endDate",None)
         old_price  =request.POST.get("oldPrice",None)
         new_price = request.POST.get("newPrice",None)
+        discount = request.POST.get("discount",None)
         if not Offer.objects.filter(name=name).exists():
              offer = Offer()
              offer.name = name
-             if image is not None :
-                  offer.photo = image
-             if description !=0 :          
+             offer.photo = image
+             if description !=0 :
                offer.description = description
              offer.publish_date = start_date
              offer.ending_date = start_date if end_date is None else end_date
              if old_price  is not None :
                 offer.old_price = old_price
-             if new_price is not None:   
+             if new_price is not None:
                offer.new_price = new_price
+             if discount is not None:
+                 offer.discount = discount
              offer.save()
              result = 'ok'
              return JsonResponse({
@@ -310,7 +314,7 @@ def add_offer(request):
              return JsonResponse({
                   'result':result,
                   "message" : "post already added",
-             })             
+             })
      except:
           return JsonResponse({
                'result':result,
@@ -319,7 +323,7 @@ def add_offer(request):
 #------------------------------------------------------------
 # GET DEVICES LIST   BASE_URI /appointment/Devices
 ############# GET DEVICE DATAILS ############################
-#------------------------------------------------------------      
+#------------------------------------------------------------
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
 def device_information(request):
@@ -353,7 +357,7 @@ def device_information(request):
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
-          })       
+          })
 #------------------------------------------------------------
 ################ API FOR EDIT DEVICE ########################
 #------------------------------------------------------------
@@ -369,28 +373,32 @@ def edit_device(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["deviceName"]
-        image = request.POST.get("deviceImage",0)
-        is_active = request.POST.get('isActive',0)
+        try:
+            image = request.FILES["deviceImage"]
+        except:
+            image = None
+        is_active = request.POST.get('isActive',None)
         description = request.POST.get("description",0)
         device = Device.objects.get(name=name)
-        if image != 0 :
+        if image  is not None :
           device.photo = image
         if description !=0:
           device.description = description
         if is_active !=0:
-          device.active = True if is_active == '1' else False
+          device.active = True if is_active is not None  else False
+        device.save()  
         result = 'ok'
         return JsonResponse({
              'result':result,
              'message':'device edited successfuly'
-             
+
         })
 
      except:
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
-          })             
+          })
 #------------------------------------------------------------
 ################ API FOR DELETE DEVICE ######################
 #------------------------------------------------------------
@@ -412,15 +420,15 @@ def delete_device(request):
         return JsonResponse({
              'result':result,
              'message':'device deleted successfuly'
-             
+
         })
      except:
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
           })
-#----------------------------------------------------------     
-# DOCTORS AND THERAPIST APIs 
+#----------------------------------------------------------
+# DOCTORS AND THERAPIST APIs
 ############### GET DOCTORS AND THERAPISTS LIST ###########
 #----------------------------------------------------------
 @api_view(['GET'])
@@ -447,7 +455,7 @@ def doctors_therapists(request):
              'result':result,
              'message':'invalid data'
          })
-     
+
 #----------------------------------------------------------
 ################ API FOR ADD DOCTOR #######################
 #----------------------------------------------------------
@@ -468,15 +476,15 @@ def add_doctor(request):
         description = request.data["description"]
         section_name = request.data["sectionName"]
         print('1')
-        saturday = request.data["saturday"] 
-        sunday = request.data["sunday"]  
-        monday =  request.data["monday"]  
-        tuesday = request.data["tuesday"]  
-        wednesday =  request.data["wednesday"]  
-        thursday = request.data["thursday"]  
-        friday =  request.data["friday"] 
+        saturday = request.data["saturday"]
+        sunday = request.data["sunday"]
+        monday =  request.data["monday"]
+        tuesday = request.data["tuesday"]
+        wednesday =  request.data["wednesday"]
+        thursday = request.data["thursday"]
+        friday =  request.data["friday"]
         print('2')
-        start_hours_in = request.data["startHoursIn"]  
+        start_hours_in = request.data["startHoursIn"]
         end_hours_in = request.data["endHoursIn"]
         start_in = start_hours_in + ':00'
         end_in = end_hours_in+':00'
@@ -511,12 +519,12 @@ def add_doctor(request):
              return JsonResponse({
                   'result':result,
                   'message':' doctor '+ name +' already exists'
-             })  
+             })
      except:
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
-          })   
+          })
 #-------------------------------------------------------------
 ################ API FOR GET DOCTOR DATAILS ##################
 #-------------------------------------------------------------
@@ -545,7 +553,7 @@ def doctor_information(request):
         thursday ='1' if doctor.thursday else '0'
         friday ='1' if doctor.friday else '0'
         start_hours_in = doctor.start_hours_in.strftime("%H:%M")
-        end_hours_in = doctor.end_hours_in.strftime("%H:%M")      
+        end_hours_in = doctor.end_hours_in.strftime("%H:%M")
         result ='ok'
         return JsonResponse({
              'doctorName':doctor_name,
@@ -582,10 +590,13 @@ def edit_doctor(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["doctorName"]
-        image = request.POST.get('doctorImage',0)
+        try:
+            image = request.FILES["doctorImage"]
+        except:
+            image = None
         description = request.POST.get("description",0)
         section_name = request.POST.get("sectionName",0)
-       
+
         spez = request.POST.get("Specialization",0)
         saturday = request.POST.get("saturday",0)
         sunday = request.POST.get("sunday",0)
@@ -599,9 +610,9 @@ def edit_doctor(request):
 
         doctor = Doctor.objects.get(name=name)
 
-        if image != 0:
-                doctor.photo = image        
-        if saturday != 0:        
+        if image is not None :
+                doctor.photo = image
+        if saturday != 0:
           doctor.saturday = True if saturday =='1' else False
         if sunday !=0:
           doctor.sunday =  True if sunday =='1' else False
@@ -619,7 +630,7 @@ def edit_doctor(request):
           start_in = start_in + ':00'
           doctor.start_hours_in = start_in
         if end_in !=0:
-          end_in = end_in+':00'  
+          end_in = end_in+':00'
           doctor.end_hours_in = end_in
         if description !=0:
           doctor.description = description
@@ -627,13 +638,13 @@ def edit_doctor(request):
           doctor.specialization = spez
         if section_name !=0:
              section = Section.objects.get(name=section_name)
-             doctor.section = section  
+             doctor.section = section
         doctor.save()
         result = 'ok'
         return JsonResponse({
                   'result':result,
                   'message':'edit successfuly'
-             }) 
+             })
      except:
           return JsonResponse({
                'result':result,
@@ -660,7 +671,7 @@ def delete_doctor(request):
         return JsonResponse({
              'result':result,
              'message':'doctor deleted successfuly'
-             
+
         })
      except:
           return JsonResponse({
@@ -695,7 +706,7 @@ def therapist_information(request):
         thursday ='1' if therapist.thursday else '0'
         friday ='1' if therapist.friday else '0'
         start_hours_in = therapist.start_hours_in.strftime("%H:%M")
-        end_hours_in = therapist.end_hours_in.strftime("%H:%M")      
+        end_hours_in = therapist.end_hours_in.strftime("%H:%M")
         result ='ok'
         return JsonResponse({
              'therapistName':therapist_name,
@@ -732,10 +743,14 @@ def edit_therapist(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["therapistName"]
-        image = request.POST.get('therapistImage',0)
+        try:
+            image = request.FILES["therapistImage"]
+        except:
+            image = None
+       
         description = request.POST.get("description",0)
         section_name = request.POST.get("sectionName",0)
-       
+
         spez = request.POST.get("spezialiation",0)
         saturday = request.POST.get("saturday",0)
         sunday = request.POST.get("sunday",0)
@@ -749,9 +764,9 @@ def edit_therapist(request):
 
         therapist = Therapist.objects.get(name=name)
 
-        if image != 0:
-                therapist.photo = image        
-        if saturday != 0:        
+        if image is not None:
+                therapist.photo = image
+        if saturday != 0:
           therapist.saturday = True if saturday =='1' else False
         if sunday !=0:
           therapist.sunday =  True if sunday =='1' else False
@@ -769,7 +784,7 @@ def edit_therapist(request):
           start_in = start_in + ':00'
           therapist.start_hours_in = start_in
         if end_in !=0:
-          end_in = end_in+':00'  
+          end_in = end_in+':00'
           therapist.end_hours_in = end_in
         if description !=0:
           therapist.description = description
@@ -777,13 +792,13 @@ def edit_therapist(request):
           therapist.specialization = spez
         if section_name !=0:
              section = Section.objects.get(name=section_name)
-             therapist.section = section  
+             therapist.section = section
         therapist.save()
         result = 'ok'
         return JsonResponse({
                   'result':result,
                   'message':'edit successfuly'
-             }) 
+             })
      except:
           return JsonResponse({
                'result':result,
@@ -810,7 +825,7 @@ def delete_therapist(request):
         return JsonResponse({
              'result':result,
              'message':'doctor deleted successfuly'
-             
+
         })
      except:
           return JsonResponse({
@@ -846,6 +861,6 @@ def section_names(request):
           return JsonResponse({
                'result':result,
                'message':'invalid or missing data',
-          })     
-          
-          
+          })
+
+
