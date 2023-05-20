@@ -1,13 +1,14 @@
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view,permission_classes
 from datetime import datetime,date,timedelta,time
-from appointment.models import Post,Instruction,Offer,Doctor,Device,Therapist
+from appointment.models import Post,Instruction,Offer,Doctor,Device,Therapist,doctor_appointment,device_appointment
 from account.models import Patient
 from account.models import PatientProfile
 import json
 import calendar
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from appointment.views import get_competent_days_in_week,daterange,get_competent_schedule_in_day,get_available_competent_appointments_in_month
 #-----------------------------------------------------------
 ################## HELP FUNCTIONS ##########################
 #-----------------------------------------------------------
@@ -95,6 +96,50 @@ def get_offers():
     offers.sort(key=date_sorting,reverse=True)  
     return offers 
 #----------------------------------------------------------
+def get_competent_schedule_in_month(name,is_doctor):
+     competent_days_in_week = get_competent_days_in_week(name,is_doctor)   
+     start_date = date.today()
+     end_date = start_date  + timedelta(days=30)
+     monthly_presence =[]
+     for day in daterange(start_date, end_date):     
+          if calendar.day_name[day.weekday()] in competent_days_in_week:
+               all_appointments = get_competent_appointments_in_day(name,is_doctor,day)
+               day_presence = {
+                    'weekDay':calendar.day_name[day.weekday()],
+                    'day': day.strftime("%Y-%m-%d"),
+                    'timeList':all_appointments,
+                     
+               }
+               monthly_presence.append(day_presence)
+
+     return monthly_presence
+#----------------------------------------------------------
+def get_competent_appointments_in_day(name,is_doctor,date):
+     appointment_list = get_competent_schedule_in_day(name,is_doctor)
+     if is_doctor:
+          doctor = Doctor.objects.get(name=name)
+          reserved_appointment = doctor_appointment.objects.filter(doctor= doctor,date= date)     
+     else:
+          therapist = Therapist.objects.get(name=name)
+          reserved_appointment = device_appointment.objects.filter(therapist=therapist,date=date)
+     appointments_details = []     
+     for appointment in appointment_list:
+          x = {
+               'time':appointment[0:-3],
+               'free':True
+                    }
+          for appoi in reserved_appointment :
+               if appointment == appoi.time.strftime("%H:%M:%S"): 
+                    x['free'] = False
+          appointments_details.append(x)     
+
+     return appointments_details
+
+
+#----------------------------------------------------------
+######################## API S ############################
+#----------------------------------------------------------
+#  API s
 @api_view(['POST'])
 def get_doctor_image(request):
      body_unicode = request.body.decode('utf-8')
@@ -159,13 +204,171 @@ def offers(request):
                'messasge':'invalid data',
           })
 #----------------------------------------------------------
-############## API FOR ####################################
+############## API FOR PATIENT PROFILE ####################
 #----------------------------------------------------------
 @api_view(['GET'])
 @permission_classes((IsAuthenticated,))
-def a(request):
-     result = 'invalid'
+def profile_info(request):
      try:
-          pass
+         result = 'invalid'
+         user = request.user
+         if user.role != 'PATIENT':
+              return JsonResponse({
+                   'result':result,
+                   'message':'you don\'t have permission to do this action'
+              })
+         profile = PatientProfile.objects.get(user=user)
+         username = user.username
+         bdate = profile.birth_date
+         phone_number = profile.phone_number
+         relationship = 'Single'  if profile.relationship == 'S' else 'Married'
+         picture = profile.img.url
+         result ='ok'
+         return JsonResponse({
+              'result':result,
+              'username':username,
+              'birth_date' : bdate,
+              'phoneNumber':phone_number,
+              'relationship':relationship,
+              'profilePicture':picture,
+
+         })
+
      except:
-          pass
+          return JsonResponse({
+               'result':result,
+               'message' : 'invalid data'
+          })
+#----------------------------------------------------------
+############## API FOR DOCTOR INFO  #######################
+#----------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def doctor_info(request):
+     try:
+          result = 'invalid'
+          user = request.user
+          if user.role != 'PATIENT':
+               return JsonResponse({
+                      'result':result,
+                      'message':'you don\'t have permission to do this action'
+              })
+          body_unicode = request.body.decode('utf-8')
+          body = json.loads(body_unicode)
+          doctor_name = body['doctorName']
+          doctor = Doctor.objects.get(name=doctor_name)
+          spez = doctor.specialization if doctor.specialization is not None else '-'
+          description = doctor.description if doctor.description is not None else '-'
+          img = doctor.photo.url
+          result = 'ok'
+          return JsonResponse({
+               'result':result,
+               'name':doctor_name,
+               'specialization':spez,
+               'descriptipn':desc_lines(description),
+               'image' : img,
+          })
+     except Exception as e:
+          return JsonResponse({
+               'result':result,
+               'message' : str(e)
+          })
+#----------------------------------------------------------
+########### API FOR GET DOCTOR SCHEDUALE  #################
+#----------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def doctor_schedule(request):
+     try:
+          result = 'invalid'
+          user = request.user
+          if user.role != 'PATIENT':
+               return JsonResponse({
+                      'result':result,
+                      'message':'you don\'t have permission to do this action'
+              })
+
+          body_unicode = request.body.decode('utf-8')
+          body = json.loads(body_unicode)
+          doctor_name = body['doctorName']
+          schedule = get_competent_schedule_in_month(doctor_name,True)
+          result = 'ok'
+          return JsonResponse({
+               'result':result,
+               'schedule':schedule
+          })
+     except :
+          return JsonResponse({
+               'result':result,
+               'message' : 'invalid data'
+          })     
+#---------------------------------------------------------------------
+################## API FOR RESERVE DOCTOR APPOINTMENT ################
+#---------------------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def reserve_doctor_appointment(request):
+     try:
+          result = 'invalid'
+          user = request.user
+          if user.role != 'PATIENT':
+               return JsonResponse({
+                'result':result,
+                'message':'you don\'t have permission to this action'
+                                })
+          body_unicode = request.body.decode('utf-8')
+          body = json.loads(body_unicode)
+          patient_name = user.username
+          doctor_name = body['doctorName']
+          appointment_date = body['appointmentDate'] 
+          appointment_time = body['appointmentTime'] +':00'
+          patient = Patient.objects.get(username=patient_name)
+          doctor = Doctor.objects.get(name=doctor_name)
+          doctor_appointments = doctor_appointment.objects.filter(date=appointment_date,time=appointment_time,doctor=doctor).exists()
+          patient_appointments = doctor_appointment.objects.filter(date=appointment_date,time=appointment_time,patient=patient).exists() or  device_appointment.objects.filter(date=appointment_date,time=appointment_time,patient=patient).exists()
+          if not patient_appointments:
+               if not doctor_appointments:
+                    available_appointments = get_available_competent_appointments_in_month(doctor_name,True)
+                    for appoint in available_appointments:
+                         if appointment_date == appoint['date'] :
+                              if appointment_time in appoint['availableAppointments']:
+                                   appointment = doctor_appointment()
+                                   appointment.doctor = doctor
+                                   appointment.patient = patient
+                                   appointment.date = appointment_date
+                                   appointment.time = appointment_time
+                                   appointment.save()
+                                   result='ok'
+                                   return JsonResponse({
+                                        'result':result,
+                                        'message':'appointment added successfuly',
+                                   })
+                              
+                              else:
+                                   return JsonResponse({
+                                        'result':result,
+                                        'message':'doctor is not available in this time',
+                                   })
+                    return JsonResponse({
+                                        'result':result,
+                                        'message':'Doctor is not available in this time',
+                                        })           
+               else:
+                    return JsonResponse({
+                         'result':result,
+                         'messagee':'Doctor  have an appointment in '+str(appointment_date)+' at  '+str(appointment_time)+' oclock already ',
+               })                    
+          else:
+               return JsonResponse({
+                    'result':result,
+                    'messagee':'You   have an appointment in '+str(appointment_date)+' at  '+str(appointment_time)+' oclock already ',
+               })
+     except:
+          return JsonResponse({
+               'result':result,
+               'message':'invalid data'
+          })
+#---------------------------------------------------------------------
+################## API FOR RESERVE DOCTOR APPOINTMENT ################
+#---------------------------------------------------------------------                   
+     

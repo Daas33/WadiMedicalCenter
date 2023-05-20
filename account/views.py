@@ -9,7 +9,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from django.core.files.base import ContentFile
 import base64
-
+import os
 #--------------------------------------------------------------------------------
 # ############################# employee login ################################
 
@@ -194,11 +194,11 @@ class Registeration(ObtainAuthToken):
                 profile.relationship = relationship
                 profile.phone_number = phone_number
                 profile.birth_date = bdate
-                
-                format, imgstr = profile_picture.split(';base64,') 
-                ext = format.split('/')[-1] 
-                patient_img = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-                profile.img = patient_img
+                if not profile_picture == '-':
+                    format, imgstr = profile_picture.split(';base64,') 
+                    ext = format.split('/')[-1] 
+                    patient_img = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+                    profile.img = patient_img
                 profile.save()
                 token = Token.objects.get(user=user).key
 

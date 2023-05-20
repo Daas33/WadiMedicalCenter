@@ -709,6 +709,7 @@ def therapist_information(request):
         end_hours_in = therapist.end_hours_in.strftime("%H:%M")
         result ='ok'
         return JsonResponse({
+            'result':result,
              'therapistName':therapist_name,
              'therapistSection':therapist_section,
              'therapistDesc':therapist_description,

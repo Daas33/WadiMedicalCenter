@@ -60,7 +60,7 @@ class PatientProfile(models.Model):
     RELATIONSHIP = (("S", "Single"), ("M", "Married"))
     gender = models.CharField(max_length=50, choices=GENDER, null=True, blank=True)
     relationship = models.CharField(max_length=50, choices=RELATIONSHIP, null=True, blank=True)
-    img = models.ImageField(upload_to="users_photos/%Y/%m/%d/", null=True, blank=True)
+    img = models.ImageField(upload_to="users_photos/%Y/%m/%d/", null=True, blank=True,default='default_pic.jpg')
     finger_print = models.CharField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=255,blank=True,null=True)
     code = models.IntegerField(blank=True,null=True)
