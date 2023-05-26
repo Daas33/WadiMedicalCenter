@@ -19,4 +19,6 @@ urlpatterns =[
         path('available_dt_appointments',views.available_dt_appointments,name='available_dt_appointments'),
         path('add_device_appointment',views.add_device_appointment,name='add_device_appointment'),
         path('therapists_names',views.therapists_names,name='therapists_names'),
+        path('patient_info',views.patient_info,name='patient_info'),
+        path('edit_patient',views.edit_patient,name='edit_patient'),
         ]

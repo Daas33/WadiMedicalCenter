@@ -80,13 +80,13 @@ class CustomAuthTokenEmployee(ObtainAuthToken):
                         })
                     else:
                         return JsonResponse({'result':'invalid',
-                                        'message' : 'username or password maybe correct'})
+                                        'message' : 'username or password maybe incorrect'})
 
 
                     
                 except:
                     return JsonResponse({'result':'invalid',
-                                        'message' : 'username or password maybe correct'})
+                                        'message' : 'invalid data'})
 
 
 urlpatterns=[

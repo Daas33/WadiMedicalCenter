@@ -3,8 +3,18 @@ from datetime import datetime
 from account.models import User,Patient
 from django.utils import timezone
 
+
+class rateValues(models.IntegerChoices):
+    ONE = 1 , "Very Bad"
+    TWO = 2 , "Bad"
+    THREE = 3 , "Normal"
+    FOUR = 4 , "High"
+    FIVE = 5 , "Very High"
+
+
 class Section(models.Model):
     name = models.CharField(max_length=255)
+    full_name = models.CharField(max_length=255,blank=True,null=True)
     photo = models.ImageField(upload_to="posts_photos/%Y/%m/%d/",null=True,blank=True)
 
 class Post(models.Model):
@@ -49,7 +59,7 @@ class Doctor(models.Model):
     friday = models.BooleanField(default=False)
     start_hours_in = models.TimeField()
     end_hours_in = models.TimeField()
-    rate = models.IntegerChoices('rete','1 2 3 4 5')
+    rate = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
     
 
 
@@ -73,7 +83,7 @@ class Therapist(models.Model):
     friday = models.BooleanField(default=False)
     start_hours_in = models.TimeField()
     end_hours_in = models.TimeField()
-    rate = models.IntegerChoices('rete','1 2 3 4 5')
+    rate = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
 
 class Device(models.Model):
     name = models.CharField(max_length=255)
@@ -81,6 +91,7 @@ class Device(models.Model):
     description = models.TextField(blank=True,null=True)
     photo = models.ImageField(upload_to="devices_photos/%Y/%m/%d/",null=True,blank=True)
     active = models.BooleanField(default=True)
+    is_service = models.BooleanField(default=False)
 
 
 
@@ -110,8 +121,8 @@ class rate(models.Model):
     #every rate is based on 5 stars
     patient = models.ForeignKey(Patient,on_delete=models.CASCADE)
     section = models.ForeignKey(Section,on_delete=models.CASCADE)
-    reception_rate = models.IntegerChoices('reception','1 2 3 4 5')
-    cleanless = models.IntegerChoices('cleanless','1 2 3 4 5')
-    treatment_od_medical_staff =models.IntegerChoices('treatment_of_medical_staff','1 2 3 4 5')
-    therapisting_rate =  models.IntegerChoices('therapisting_rate','1 2 3 4 5')
+    reception_rate = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
+    cleanless = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
+    treatment_od_medical_staff =models.IntegerField(choices=rateValues.choices,null=True,blank =True)
+    therapisting_rate =  models.IntegerField(choices=rateValues.choices,null=True,blank =True)
     name_of_th_therapist = models.CharField(max_length=255)

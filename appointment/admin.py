@@ -11,3 +11,4 @@ admin.site.register(Offer)
 admin.site.register(Instruction)
 admin.site.register(doctor_appointment)
 admin.site.register(device_appointment)
+

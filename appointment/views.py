@@ -3,7 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view,permission_classes
 from datetime import datetime,date,timedelta,time
 from .models import doctor_appointment,device_appointment,Doctor,Device,Therapist
-from account.models import Patient
+from account.models import Patient,User
 from account.models import PatientProfile
 import json
 import calendar
@@ -12,6 +12,9 @@ from rest_framework.permissions import IsAuthenticated
 ################ API FOR REACT APP  for employee ######################
 #----------------------------------------------------------------------
 ##############Function For Help ########################################
+def sort_by_date_joined(list):
+     return list['date_joined']
+#-----------------------------------------------------------------------
 def sorting(lis):
      return lis['time']
 #----------------------------------------------------------------------
@@ -572,22 +575,25 @@ def Patients(request):
                      'Name':patient.username if patient.username else '-',
                      'FileNumber':patient_profile.file_number if patient_profile.file_number else '-',
                      'Gender':'Male' if patient_profile.gender=='M' else 'Female',
-                     'Age': calculateAge(patient_profile.birth_date) if patient_profile.birth_date else '-', 
+                     'Age': calculateAge(patient_profile.birth_date) if patient_profile.birth_date else '-',
+                     'date_joined':patient.date_joined 
 
                }
                patients_list.append(patient_details)
+          patients_list.sort(key=sort_by_date_joined,reverse=True)
+               
           result ='ok'
           return JsonResponse({
                'result1':result,
                'Patients':patients_list,
                                })
-     except:
+     except Exception as e:
           return JsonResponse({
                'result':result,
-               'message':'bad request'
+               'message':str(e)
           })
 #----------------------------------------------------------------
-######### API FOR GET DEVICES LIST ##############################
+######### API FOR add DOCTOR LIST ##############################
 #---------------------------------------------------------------- 
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
@@ -877,12 +883,13 @@ def available_dt_appointments(request):
           device = Device.objects.get(name=device_name)
           available_appointmnets_list = get_available_competent_appointments_in_month(therapist_name,False)
           # available_appointments= []
-          for day_presence in available_appointmnets_list:
-               # print(day_presence)
-               device_reserved_appointmnets = get_device_reserved_appointments_in_day(device,day_presence['date'])
-               for appointment in device_reserved_appointmnets:
-                    if str(appointment['time']) in day_presence['availableAppointments']:
-                         day_presence['availableAppointments'].remove(str(appointment['time']))
+          if  not device.is_service:
+               for day_presence in available_appointmnets_list:
+                    # print(day_presence)
+                    device_reserved_appointmnets = get_device_reserved_appointments_in_day(device,day_presence['date'])
+                    for appointment in device_reserved_appointmnets:
+                         if str(appointment['time']) in day_presence['availableAppointments']:
+                              day_presence['availableAppointments'].remove(str(appointment['time']))                    
           result ='ok'               
           return JsonResponse({
                'result':result,
@@ -933,6 +940,7 @@ def device_reserved_appointments(request):
           })          
 #---------------------------------------------------------------
 ############# API FOR RESERVE DEVICE APPOINTMENT################
+#---------------------------------------------------------------
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
 def add_device_appointment(request):
@@ -958,7 +966,7 @@ def add_device_appointment(request):
           print('1')
           device = Device.objects.get(name=device_name)
           print('1')
-          device_appointments_checks = device_appointment.objects.filter(date=appointment_date,time=appointment_time,device=device).exists()
+          device_appointments_checks = device_appointment.objects.filter(date=appointment_date,time=appointment_time,device=device).exists() if device.is_service == False else False
           therapist_appointments_checks = device_appointment.objects.filter(date=appointment_date,time=appointment_time,therapist=therapist).exists()
           patient_appointments_checks = doctor_appointment.objects.filter(date=appointment_date,time=appointment_time,patient=patient).exists() or  device_appointment.objects.filter(date=appointment_date,time=appointment_time,patient=patient).exists()
           if not device_appointments_checks:
@@ -1010,4 +1018,114 @@ def add_device_appointment(request):
                'result':result,
                'message':"invalid data"}))
 #---------------------------------------------------------------
+################ PATIENT INFO ##################################
+#---------------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def patient_info(request):
+     try:
+          result = 'invalid'
+          user = request.user
+          if user.role != 'RECEIPTION':
+               return JsonResponse({
+                'result':result,
+                'message':'you don\'t have permission to this action'
+                                })         
+          body_unicode = request.body.decode('utf-8')
+          body = json.loads(body_unicode)
+          patient_name = body['Name']
+          patient = Patient.patient.get(username=patient_name)
+          profile = PatientProfile.objects.get(user =patient)
+          file_number = profile.file_number  if profile.file_number is not None else '-'
+          phone_number = profile.phone_number  if profile.phone_number is not None else '-'
+          bdate = profile.birth_date  if profile.birth_date is not None else '-'
+          gender = '1' if  profile.gender=='F' else '0'
+          rel = '1' if profile.relationship == 'S' else '0'
+          result = 'ok'
+          return JsonResponse({
+               'result':result,
+               'patientName' : patient_name,
+               'gnender': gender,
+               'relationship':rel,
+               'birthDate':bdate,
+               'phoneNumber':phone_number,
+               'file_number':file_number
+          })
+     except :
+          return JsonResponse(({
+               'result':result,
+               'message':'invalid data'}))
+    
+#---------------------------------------------------------------
+################ API FOR EDIT PATIENTS #########################
+#---------------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def edit_patient(request):
+     try:
+          result = 'invalid'
+          user = request.user
+          if user.role != 'RECEIPTION':
+               return JsonResponse({
+                'result':result,
+                'message':'you don\'t have permission to this action'
+                                })
+          name = request.POST['patientName']
+          file_number = request.POST.get("fileNumber",None)
+          phone_number = request.POST.get("phoneNumber",None)
+          bdate = request.POST.get("birthDate",None)
+          gender = request.POST.get("gender",None)
+          relationship = request.POST.get("relationship",None)
+          password = request.POST.get("password",None)
+          patient = Patient.patient.get(username=name)
+          profile = PatientProfile.objects.get(user =patient)
+          if password is not None :
+               user = Patient.objects.get(username=name)
+               print(user)
+               print(user.password)
+               user.set_password(password)
+               user.save()
+               print(user.password)
+
+               # user = User.objects.get(username=name)
+               # print(patient.password)
+               # print(user)
+               # user.set_password(str(password))
+               # print(patient.password)
+               # user.save()
+
+               
+          if file_number is not None :
+               # print(type(file_number))
+               # print(type(profile.file_number))
+               if  not PatientProfile.objects.filter(file_number=file_number).exists() or str(profile.file_number) == file_number : 
+                    profile.file_number  = file_number
+               else:
+                    return JsonResponse({
+                         'result':result,
+                         'message':'This file number has been given to another user'
+                    })     
+          if phone_number is not None : 
+               profile.phone_number  = phone_number
+          if bdate is not None : 
+               profile.birth_date  = bdate
+          if gender is not None : 
+               profile.gender  = 'F' if  gender == '1' else 'M'
+          if relationship is not None : 
+               profile.relationship  = 'S' if relationship == '1' else 'M'
+          profile.save()
+          patient.save()
+          result = 'ok'
+          return JsonResponse({
+               'result': result,
+               'message': 'Patient edited successfully'
+          })
+
+     except Exception as e:
+          return JsonResponse(({
+               'result':result,
+               'message':str(e)}))
+#-----------------------------------------------------------------
+################### #########################
+#-----------------------------------------------------------------      
      

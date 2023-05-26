@@ -32,7 +32,10 @@ urlpatterns =[
     path('add_section',views.add_section,name='add_section'),
     #-------------------------------------------------------
     # GET OFFERS , ADD, EDIT AND DELETE OFFER
-    path('add_offer',views.add_offer,name='add_offer'),  
+    path('offers',views.offers,name='offers'),
+    path('add_offer',views.add_offer,name='add_offer'),
+    path('delete_offer',views.delete_offer,name='delete_offer'),
+    #-----------------------------------------------------------     
     
     
 ]

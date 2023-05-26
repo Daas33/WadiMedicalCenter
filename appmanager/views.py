@@ -10,6 +10,18 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 from patient.views import desc_lines
 #-----------------------------------------------------
+def get_date_time(time_string):
+     year = int(time_string[:4])
+     mounth = int(time_string[5:7])
+     day = int(time_string[8:10])
+     hour = int(time_string[11:13])
+     minutes = int(time_string[14:16])
+     return timezone.datetime(year,mounth,day,hour,minutes)
+#-----------------------------------------------------
+def dicount(old,new):
+     disc =  int((1-new/old)*100)
+     return str(disc) + ' %'
+#-----------------------------------------------------
 def sorting(lis):
     return lis['Name']
 #-----------------------------------------------------
@@ -207,11 +219,13 @@ def add_section(request):
                    'message':'you don\'t have permission to do this action'
               })
         name = request.data["name"]
+        full_name = request.data['fullName']
         image = request.data["sectionImage"]
         if not Section.objects.filter(name=name).exists():
              section = Section()
              section.name = name
              section.photo = image
+             section.full_name = full_name
              section.save()
              result = 'ok'
              return JsonResponse({
@@ -246,6 +260,7 @@ def add_device(request):
         image = request.data["deviceImage"]
         section_name = request.data["sectionName"]
         description = request.data["description"]
+        is_service = request.data["isService"]
         if not Device.objects.filter(name=name).exists():
              section = Section.objects.get(name=section_name)
              device  = Device()
@@ -253,6 +268,9 @@ def add_device(request):
              device.photo = image
              device.section = section
              device.description = description
+             if is_service== '1':
+                 device.is_service  = True
+
              device.save()
              result = 'ok'
              return JsonResponse({
@@ -297,8 +315,13 @@ def add_offer(request):
              offer.photo = image
              if description !=0 :
                offer.description = description
-             offer.publish_date = start_date
-             offer.ending_date = start_date if end_date is None else end_date
+             start_date = get_date_time(start_date)
+             offer.publish_date =timezone.make_aware(start_date)
+             if end_date is not None :
+               end_date = get_date_time(end_date) 
+               offer.ending_date = timezone.make_aware(end_date)
+             else:
+                 offer.ending_date = timezone.make_aware(start_date)  
              if old_price  is not None :
                 offer.old_price = old_price
              if new_price is not None:
@@ -315,10 +338,10 @@ def add_offer(request):
                   'result':result,
                   "message" : "post already added",
              })
-     except:
+     except :
           return JsonResponse({
                'result':result,
-               'message':'invalid data'
+               'message':'invalid data',
           })
 #------------------------------------------------------------
 # GET DEVICES LIST   BASE_URI /appointment/Devices
@@ -806,7 +829,7 @@ def edit_therapist(request):
                'message':'invalid or missing data',
           })
 #-------------------------------------------------------------
-################ API FOR DELETE DOCTOR  ######################
+################ API FOR DELETE DOCTOR  ######################AD
 #-------------------------------------------------------------
 @api_view(['POST'])
 @permission_classes((IsAuthenticated,))
@@ -863,5 +886,73 @@ def section_names(request):
                'result':result,
                'message':'invalid or missing data',
           })
+#-------------------------------------------------------------
+############# API FOR GET OFFERS LIST ########################
+#-------------------------------------------------------------
+@api_view(['GET'])
+@permission_classes((IsAuthenticated,))
+def offers(request):
+     try:
+        result = 'invalid'
+        user = request.user
+        if user.role != 'APPMANAGER':
+              return JsonResponse({
+                   'result':result,
+                   'message':'you don\'t have permission to do this action'
+              })
+        all_offers = Offer.objects.all()
+        offer_list =[]
+        for offer in all_offers:
+            publish_date = timezone.localtime(offer.publish_date).strftime('%Y/%m/%d %H-%M')
+            end_date = timezone.localtime(offer.ending_date).strftime('%Y/%m/%d %H-%M')
+            offer_details = {
+                'offerName':offer.name,
+                'description':desc_lines(offer.description),
+                'newPrice':offer.new_price if offer.new_price is not None else '-',
+                'startDate' :publish_date if offer.publish_date is not None else '-',
+                'endDate' : end_date if offer.ending_date is not None else '-',
+                'discount': str(offer.discount)+' %'  if offer.discount is not None else dicount(offer.old_price,offer.new_price),
+                'offerId':offer.id,
+            }
+            offer_list.append(offer_details)
+        result = 'ok'    
+        offer_list.reverse()
+        return JsonResponse({
+            'result':result,
+            'offers':offer_list,
+        })   
+     except Exception as e:
+          return JsonResponse({
+               'result':result,
+               'message':'invalid or missing data',
+               'err':str(e)
+          })
+#-------------------------------------------------------------
+#################### API FOR DELETE OFFER ####################
+#-------------------------------------------------------------
+@api_view(['POST'])
+@permission_classes((IsAuthenticated,))
+def delete_offer(request):
+     try:
+        result = 'invalid'
+        user = request.user
+        if user.role != 'APPMANAGER':
+              return JsonResponse({
+                   'result':result,
+                   'message':'you don\'t have permission to do this action'
+              })
+        offer_id = request.data["offerId"]
+        offer = Offer.objects.get(id=offer_id)
+        offer.delete()
+        result = 'ok'
+        return JsonResponse({
+             'result':result,
+             'message':'offer deleted successfuly'
 
-
+        })
+     except:
+          return JsonResponse({
+               'result':result,
+               'message':'invalid or missing data',
+          })
+#--------------------------------------------------------------

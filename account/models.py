@@ -1,3 +1,4 @@
+from typing import Optional
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.conf import settings
@@ -37,10 +38,15 @@ class Patient(User):
 
     class Meta:
         proxy = True
-
+    def set_password(self, raw_password: str | None, *args,**kwargs) -> None:
+        super().set_password(raw_password)
+        return super().save(*args,**kwargs)
+    def save(self, *args, **kwargs):
+         return super().save(*args, **kwargs)
+    
     def __str__(self):
         return self.username    
-
+    
 
 @receiver(post_save, sender=Patient)
 def create_user_profile(sender, instance, created, **kwargs):

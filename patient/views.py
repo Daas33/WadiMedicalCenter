@@ -63,9 +63,6 @@ def get_instructions():
     instructions.sort(reverse=True)
     return instructions
 #----------------------------------------------------------
-def dicount(old,new):
-     disc =  int((1-new/old)*100)
-     return str(disc) + ' %'
 #----------------------------------------------------------
 def desc_lines(description):
     
