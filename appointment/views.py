@@ -900,7 +900,7 @@ def available_dt_appointments(request):
 
 
 
-          pass
+          
      except:
           return JsonResponse({
                'result':result,

@@ -15,7 +15,7 @@ class rateValues(models.IntegerChoices):
 class Section(models.Model):
     name = models.CharField(max_length=255)
     full_name = models.CharField(max_length=255,blank=True,null=True)
-    photo = models.ImageField(upload_to="posts_photos/%Y/%m/%d/",null=True,blank=True)
+    photo = models.ImageField(upload_to="posts_photos/%Y/%m/%d/",null=True,blank=True,default='default_sec.png')
 
 class Post(models.Model):
     name = models.CharField(max_length=255,blank=True,null=True)
@@ -46,7 +46,7 @@ class Doctor(models.Model):
     name = models.CharField(max_length=255)
     specialization = models.CharField(max_length=255)
     description = models.TextField(blank=True,null=True)
-    photo = models.ImageField(upload_to="employee_photos/%Y/%m/%d/",null=True,blank=True)
+    photo = models.ImageField(upload_to="employee_photos/%Y/%m/%d/",null=True,blank=True,default='default_pic.jpg')
     #----------------------------------------------------------
     section = models.ForeignKey(Section,on_delete=models.CASCADE)
     membership_date = models.DateTimeField(auto_now_add=True)
@@ -70,7 +70,7 @@ class Therapist(models.Model):
     name = models.CharField(max_length=255)
     specialization = models.CharField(max_length=255)
     description = models.TextField(blank=True,null=True)
-    photo = models.ImageField(upload_to="employee_photos/%Y/%m/%d/",null=True,blank=True)
+    photo = models.ImageField(upload_to="employee_photos/%Y/%m/%d/",null=True,blank=True,default='default_pic.jpg')
     #----------------------------------------------------------
     section = models.ForeignKey(Section,on_delete=models.CASCADE)
     membership_date = models.DateTimeField(auto_now_add=True)
@@ -89,7 +89,7 @@ class Device(models.Model):
     name = models.CharField(max_length=255)
     section = models.ForeignKey(Section,on_delete=models.CASCADE)
     description = models.TextField(blank=True,null=True)
-    photo = models.ImageField(upload_to="devices_photos/%Y/%m/%d/",null=True,blank=True)
+    photo = models.ImageField(upload_to="devices_photos/%Y/%m/%d/",null=True,blank=True,default='default_dev.jpg')
     active = models.BooleanField(default=True)
     is_service = models.BooleanField(default=False)
 
@@ -121,6 +121,8 @@ class rate(models.Model):
     #every rate is based on 5 stars
     patient = models.ForeignKey(Patient,on_delete=models.CASCADE)
     section = models.ForeignKey(Section,on_delete=models.CASCADE)
+    doctor_appointment = models.ForeignKey(doctor_appointment, on_delete=models.CASCADE,blank=True,null=True)
+    device_appointment = models.ForeignKey(device_appointment, on_delete=models.CASCADE,blank=True,null=True)
     reception_rate = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
     cleanless = models.IntegerField(choices=rateValues.choices,null=True,blank =True)
     treatment_od_medical_staff =models.IntegerField(choices=rateValues.choices,null=True,blank =True)
